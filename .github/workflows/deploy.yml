@@ -1,0 +1,33 @@
+name: Deploy Existing Docker Image to K8s
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      KUBE_CONFIG_DATA: ${{ secrets.KUBE_CONFIG_DATA }}  # kubeconfig encode base64
+      IMAGE_NAME: myapp
+      IMAGE_TAG: latest
+      DOCKER_HUB_USERNAME: your_dockerhub_username
+      DEPLOYMENT_NAME: myapp   # Tên Deployment trong K8s
+      NAMESPACE: default       # Namespace của Deployment
+
+    steps:
+      # 1. Checkout code (tuỳ cần hay không)
+      - uses: actions/checkout@v3
+
+      # 2. Setup kubeconfig
+      - name: Setup kubeconfig
+        run: |
+          echo "${KUBE_CONFIG_DATA}" | base64 --decode > $HOME/.kube/config
+
+      # 3. Update image và rollout
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl set image deployment/${DEPLOYMENT_NAME} ${IMAGE_NAME}=${DOCKER_HUB_USERNAME}/${IMAGE_NAME}:${IMAGE_TAG} -n ${NAMESPACE}
+          kubectl rollout status deployment/${DEPLOYMENT_NAME} -n ${NAMESPACE}
